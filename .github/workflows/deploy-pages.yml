@@ -9,13 +9,34 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  administration: write
 
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
+  enable-pages:
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      administration: write
+    steps:
+      - name: Ensure GitHub Pages uses GitHub Actions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${GITHUB_REPOSITORY}/pages" >/dev/null 2>&1; then
+            echo "Pages already configured"
+            exit 0
+          fi
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/pages" \
+            -f build_type=workflow \
+            -f "source[branch]=master" \
+            -f "source[path]=/"
+
   build:
+    needs: enable-pages
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

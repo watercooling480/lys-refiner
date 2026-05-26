@@ -61,6 +61,24 @@ Examples:
 - `a + lone` can become `alone`
 - long-tail cases such as `moon + light` or `mid + night` are more likely to stay split
 
+## GitHub Pages deployment
+
+After merging a PR that includes [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml), the **first push to `master` automatically enables GitHub Pages** (the workflow creates the Pages site before deploy; you usually do not need to open Settings manually).
+
+If the `enable-pages` job fails (for example due to org policy), a maintainer can run this once (equivalent to the workflow step):
+
+```powershell
+gh api --method POST repos/<owner>/lys-refiner/pages `
+  -f build_type=workflow `
+  -f "source[branch]=master" `
+  -f "source[path]=/"
+```
+
+Live URLs (assets under `/lys-refiner/`, matching a `GITHUB_PAGES=true` build):
+
+- Upstream: [https://watercooling480.github.io/lys-refiner/](https://watercooling480.github.io/lys-refiner/)
+- Fork: [https://hklhaobin.github.io/lys-refiner/](https://hklhaobin.github.io/lys-refiner/)
+
 ## Development
 
 ### Web
