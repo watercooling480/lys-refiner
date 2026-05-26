@@ -64,6 +64,26 @@ Examples:
 - `a + lone` can become `alone`
 - long-tail cases such as `moon + light` or `mid + night` are more likely to stay split
 
+## GitHub Pages deployment
+
+After merging a PR that includes [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml), the workflow builds and deploys on push to `master` or manual dispatch. **Before the first deploy, a maintainer must enable Pages once** (`GITHUB_TOKEN` cannot `POST /repos/.../pages` — it returns 403; `administration: write` is not a valid workflow permission).
+
+Run from the repo root (replace `<owner>` with the org/user; upstream uses `watercooling480`):
+
+```powershell
+gh api --method POST repos/<owner>/lys-refiner/pages `
+  -f build_type=workflow `
+  -f "source[branch]=master" `
+  -f "source[path]=/"
+```
+
+Then open **Actions → Deploy GitHub Pages → Run workflow**, or push to `master` again. A 404 from `deploy-pages` usually means this step was not run yet.
+
+Live URLs (assets under `/lys-refiner/`, matching a `GITHUB_PAGES=true` build):
+
+- Upstream: [https://watercooling480.github.io/lys-refiner/](https://watercooling480.github.io/lys-refiner/)
+- Fork: [https://hklhaobin.github.io/lys-refiner/](https://hklhaobin.github.io/lys-refiner/)
+
 ## Development
 
 ### Web
