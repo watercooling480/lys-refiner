@@ -14,6 +14,13 @@ function hasWhitespaceBoundary(tokens: VisualToken[]) {
   return false
 }
 
+function hasHyphenBoundary(tokens: VisualToken[]) {
+  for (let index = 0; index < tokens.length - 1; index += 1) {
+    if (tokens[index].text.endsWith('-') || tokens[index + 1].text.startsWith('-')) return true
+  }
+  return false
+}
+
 export function App() {
   const [fileName, setFileName] = useState('lyrics.lys')
   const [source, setSource] = useState('')
@@ -128,6 +135,10 @@ export function App() {
         const picked = indexes.map((index) => item.after[index]).filter(Boolean)
         if (picked.length < 2) return item
         if (hasWhitespaceBoundary(picked)) {
+          showActionError('所选片段不属于同一个单词，无法合并')
+          return item
+        }
+        if (hasHyphenBoundary(picked)) {
           showActionError('所选片段不属于同一个单词，无法合并')
           return item
         }

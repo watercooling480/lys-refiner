@@ -136,7 +136,7 @@ export function refineTokens(tokens: Token[], sensitivity: number, rowIndex = 0)
     while (nextIndex < tokens.length) {
       const next = tokens[nextIndex]
       const gap = next.start - (start + duration)
-      if (text.endsWith(' ') || next.text.startsWith(' ') || text.includes('-') || next.text.includes('-') || gap >= 10) break
+      if (text.endsWith(' ') || next.text.startsWith(' ') || text.endsWith('-') || next.text.startsWith('-') || gap >= 10) break
 
       const leftVelocity = velocity(text, duration)
       const rightVelocity = velocity(next.text, next.duration)
