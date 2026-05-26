@@ -8,7 +8,7 @@ Local Lyricify Syllable (`.lys`) lyric refinement tool.
 
 LYS Refiner merges overly fragmented Lyricify Syllable timing tokens into more readable word-level timing while keeping long held notes and word boundaries controllable.
 
-It is a Tauri desktop app. There is no Python backend, no browser tab, and no network requirement at runtime.
+Available as a **desktop app** (Tauri) and **web app** (GitHub Pages). There is no Python backend and no network requirement at runtime; lyrics are processed locally in the browser or desktop shell.
 
 ## Features
 
@@ -21,9 +21,17 @@ It is a Tauri desktop app. There is no Python backend, no browser tab, and no ne
 - Prevent manual merges across whitespace boundaries
 - Copy the final result from the output text box
 
+## Online
+
+Open in your browser (no install):
+
+**https://watercooling480.github.io/lys-refiner/**
+
+Data is processed locally in the browser; nothing is uploaded to a server.
+
 ## Usage
 
-1. Open LYS Refiner.
+1. Open LYS Refiner (desktop or web).
 2. Paste lyrics or choose a `.lys` / `.txt` file.
 3. Select a merge strength preset or adjust the slider.
 4. Click `转换`.
@@ -55,27 +63,31 @@ Examples:
 
 ## Development
 
-Requirements:
+### Web
 
-- Node.js
-- Rust toolchain
-- Windows WebView2 Runtime
-
-Install dependencies:
+Requirements: Node.js
 
 ```powershell
 npm install
-```
-
-Build frontend:
-
-```powershell
+npm run dev
 npm run build
 ```
 
-Build Windows app:
+Preview a GitHub Pages build locally (assets under `/lys-refiner/`):
 
 ```powershell
+$env:GITHUB_PAGES='true'
+npm run build
+npm run preview
+```
+
+### Desktop (Tauri)
+
+Additional requirements: Rust toolchain, Windows WebView2 Runtime
+
+```powershell
+npm install
+npm run tauri:dev
 npm run dist
 ```
 
