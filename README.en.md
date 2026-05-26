@@ -63,9 +63,9 @@ Examples:
 
 ## GitHub Pages deployment
 
-After merging a PR that includes [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml), the **first push to `master` automatically enables GitHub Pages** (the workflow creates the Pages site before deploy; you usually do not need to open Settings manually).
+After merging a PR that includes [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml), the workflow builds and deploys on push to `master` or manual dispatch. **Before the first deploy, a maintainer must enable Pages once** (`GITHUB_TOKEN` cannot `POST /repos/.../pages` — it returns 403; `administration: write` is not a valid workflow permission).
 
-If the `enable-pages` job fails (for example due to org policy), a maintainer can run this once (equivalent to the workflow step):
+Run from the repo root (replace `<owner>` with the org/user; upstream uses `watercooling480`):
 
 ```powershell
 gh api --method POST repos/<owner>/lys-refiner/pages `
@@ -73,6 +73,8 @@ gh api --method POST repos/<owner>/lys-refiner/pages `
   -f "source[branch]=master" `
   -f "source[path]=/"
 ```
+
+Then open **Actions → Deploy GitHub Pages → Run workflow**, or push to `master` again. A 404 from `deploy-pages` usually means this step was not run yet.
 
 Live URLs (assets under `/lys-refiner/`, matching a `GITHUB_PAGES=true` build):
 
