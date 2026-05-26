@@ -9,7 +9,6 @@ permissions:
   contents: read
   pages: write
   id-token: write
-  administration: write
 
 concurrency:
   group: pages
@@ -20,7 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pages: write
-      administration: write
     steps:
       - name: Ensure GitHub Pages uses GitHub Actions
         env:
