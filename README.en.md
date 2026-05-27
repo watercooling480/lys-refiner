@@ -27,9 +27,6 @@ Open in your browser (no install):
 
 **https://watercooling480.github.io/lys-refiner/**
 
-> [!NOTE]
-> The online deployment is currently affected by a GitHub Actions account status limitation and may be temporarily unavailable. Desktop releases are not affected.
-
 Data is processed locally in the browser; nothing is uploaded to a server.
 
 ## Usage
