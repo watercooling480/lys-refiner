@@ -24,6 +24,16 @@ Available as a desktop app (Tauri) and web app (GitHub Pages). Fully local proce
 | `LYS.Refiner_VERSION_x64-standalone.exe` | Portable (x64) |
 | `LYS.Refiner_VERSION_arm64-setup.exe` | Installer (ARM64) |
 | `LYS.Refiner_VERSION_arm64-standalone.exe` | Portable (ARM64) |
+| `LYS-Refiner-Legacy-win_x64.exe` | Legacy build (see below) |
+
+### Legacy Build
+
+For older systems that cannot run the Tauri version (Windows 7/8/8.1 or early Windows 10).
+
+- Based on Neutralino.js, single-file executable
+- Requires Chrome or Firefox installed on the system
+- Same functionality as the main version, but less polished window experience
+- Not recommended if your system supports the Tauri version
 
 ## System Requirements
 
