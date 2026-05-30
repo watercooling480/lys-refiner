@@ -79,16 +79,17 @@ function threshold(sensitivity: number, text: string, duration: number, pairDura
   const width = visualWidth(text)
   let value = baseThreshold(sensitivity, pairDuration)
 
-  if (width <= 5.2 && duration <= 1100) {
+  if (width <= 4.6 && duration <= 1100) {
     return sensitivity >= 0.25 ? value * 1.45 : value
   }
   if (visualWidth(text.slice(0, 1)) > 0 && visualWidth(text.slice(0, 1)) <= 1.05 && width <= 5.4) {
     return value * 1.35
   }
 
+  if (width >= 5.8) value *= 0.88
   if (width >= 7.0) value *= 0.82
   if (width >= 9.5) value *= 0.72
-  if (duration >= 1200) value *= 0.78
+  if (duration >= 1000) value *= 0.82
   if (duration >= 1550) value *= 0.62
   return value
 }
