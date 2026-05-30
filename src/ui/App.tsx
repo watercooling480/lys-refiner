@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { PRESETS, preview, serializeLine } from '../core/refiner'
+import { PRESETS, detectHasKorean, preview, serializeLine } from '../core/refiner'
 import type { Preset, Preview, VisualToken } from '../types'
 import { Timeline } from './Timeline'
 
@@ -26,6 +26,8 @@ export function App() {
   const [source, setSource] = useState('')
   const [preset, setPreset] = useState<Preset>(PRESETS[1])
   const [strength, setStrength] = useState(PRESETS[1].sensitivity)
+  const [koreanStrength, setKoreanStrength] = useState(0.08)
+  const [hasKorean, setHasKorean] = useState(false)
   const [result, setResult] = useState<Preview | null>(null)
   const [selected, setSelected] = useState<Array<{ row: number; token: number }>>([])
   const [error, setError] = useState('')
@@ -73,7 +75,8 @@ export function App() {
     }
     setError('')
     setActionError('')
-    setResult(preview(source, strength))
+    setHasKorean(detectHasKorean(source))
+    setResult(preview(source, strength, koreanStrength))
     setSelected([])
   }
 
@@ -269,6 +272,23 @@ export function App() {
                 setStrength(Number(event.target.value) / 100)
               }}
             />
+
+            {hasKorean ? (
+              <>
+                <label className="slider-label">
+                  <span>韩语合并强度</span>
+                  <b>{koreanStrength.toFixed(2)}</b>
+                </label>
+                <input
+                  className="slider"
+                  type="range"
+                  min={1}
+                  max={40}
+                  value={Math.round(koreanStrength * 100)}
+                  onChange={(event) => setKoreanStrength(Number(event.target.value) / 100)}
+                />
+              </>
+            ) : null}
 
             <div className="buttons">
               <button onClick={runPreview}>转换</button>

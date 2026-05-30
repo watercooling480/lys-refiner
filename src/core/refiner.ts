@@ -53,6 +53,25 @@ export const PRESETS: Preset[] = [
   },
 ]
 
+// --- CJK detection ---
+
+const RE_CJK_CHINESE = /[\u4e00-\u9fff\u3400-\u4dbf]/
+const RE_CJK_JAPANESE = /[\u3040-\u309f\u30a0-\u30ff\u31f0-\u31ff\uff66-\uff9f]/
+const RE_KOREAN = /[\uac00-\ud7af\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\ud7b0-\ud7ff]/
+
+type ScriptType = 'chinese' | 'japanese' | 'korean' | 'latin'
+
+function detectScript(text: string): ScriptType {
+  if (RE_CJK_JAPANESE.test(text)) return 'japanese'
+  if (RE_CJK_CHINESE.test(text)) return 'chinese'
+  if (RE_KOREAN.test(text)) return 'korean'
+  return 'latin'
+}
+
+export function detectHasKorean(text: string): boolean {
+  return RE_KOREAN.test(text)
+}
+
 function visualWidth(text: string): number {
   let width = 0
   for (const char of Array.from(text)) {
@@ -122,7 +141,7 @@ function toVisual(tokens: Token[], rowIndex: number, prefix: string): VisualToke
   }))
 }
 
-export function refineTokens(tokens: Token[], sensitivity: number, rowIndex = 0): VisualToken[] {
+export function refineTokens(tokens: Token[], sensitivity: number, rowIndex = 0, koreanSensitivity = 0.08): VisualToken[] {
   const result: VisualToken[] = []
   let index = 0
 
@@ -134,8 +153,29 @@ export function refineTokens(tokens: Token[], sensitivity: number, rowIndex = 0)
     const sourceIndexes = [index]
     let nextIndex = index + 1
 
+    const script = detectScript(text)
+    if (script === 'chinese' || script === 'japanese') {
+      result.push({
+        id: `after-${rowIndex}-${result.length}`,
+        text,
+        start,
+        end: start + duration,
+        sourceIndexes,
+        merged: false,
+      })
+      index = nextIndex
+      continue
+    }
+
+    const effectiveSensitivity = script === 'korean' ? koreanSensitivity : sensitivity
+
     while (nextIndex < tokens.length) {
       const next = tokens[nextIndex]
+      const nextScript = detectScript(next.text)
+      if (nextScript === 'chinese' || nextScript === 'japanese') break
+      if (script === 'korean' && nextScript !== 'korean') break
+      if (script === 'latin' && nextScript === 'korean') break
+
       const gap = next.start - (start + duration)
       if (text.endsWith(' ') || next.text.startsWith(' ') || text.endsWith('-') || next.text.startsWith('-') || gap >= 10) break
 
@@ -146,7 +186,7 @@ export function refineTokens(tokens: Token[], sensitivity: number, rowIndex = 0)
         : 0
       const mergedText = text + next.text
       const mergedDuration = next.start + next.duration - start
-      let limit = threshold(sensitivity, mergedText, mergedDuration, duration + next.duration)
+      let limit = threshold(effectiveSensitivity, mergedText, mergedDuration, duration + next.duration)
       if (hasLongTail(text, next.text, duration, next.duration, mergedDuration)) limit *= 0.55
       if (velocityDiff > limit) break
 
@@ -174,20 +214,20 @@ export function serializeLine(attr: string, tokens: VisualToken[]): string {
   return `[${attr}]${tokens.map((token) => `${token.text}(${token.start},${token.end - token.start})`).join('')}`
 }
 
-export function refineLine(line: string, sensitivity: number): string {
+export function refineLine(line: string, sensitivity: number, koreanSensitivity = 0.08): string {
   const lineMatch = line.trimEnd().match(/^\[(\d+)\](.*)$/)
   if (!lineMatch) return line
 
   const attr = lineMatch[1]
   const content = lineMatch[2]
   const tokens = parseTokens(content)
-  return serializeLine(attr, refineTokens(tokens, sensitivity))
+  return serializeLine(attr, refineTokens(tokens, sensitivity, 0, koreanSensitivity))
 }
 
-export function refineText(text: string, sensitivity: number): string {
+export function refineText(text: string, sensitivity: number, koreanSensitivity = 0.08): string {
   return text
     .split(/(\r?\n)/)
-    .map((part, index) => (index % 2 === 0 && part.startsWith('[') ? refineLine(part, sensitivity) : part))
+    .map((part, index) => (index % 2 === 0 && part.startsWith('[') ? refineLine(part, sensitivity, koreanSensitivity) : part))
     .join('')
 }
 
@@ -195,7 +235,7 @@ function countTokens(text: string): number {
   return text.match(/\(\d+,\d+\)/g)?.length ?? 0
 }
 
-export function preview(text: string, sensitivity: number): Preview {
+export function preview(text: string, sensitivity: number, koreanSensitivity = 0.08): Preview {
   const lines = text.split(/\r?\n/)
   const refinedLines: string[] = []
   const rows: Preview['rows'] = []
@@ -210,7 +250,7 @@ export function preview(text: string, sensitivity: number): Preview {
     const attr = match[1]
     const original = parseTokens(match[2])
     const before = toVisual(original, index, 'before')
-    const after = refineTokens(original, sensitivity, index)
+    const after = refineTokens(original, sensitivity, index, koreanSensitivity)
     refinedLines.push(serializeLine(attr, after))
     if (before.length) rows.push({ attr, before, after })
   })
