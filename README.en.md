@@ -1,84 +1,94 @@
 # LYS Refiner
 
-Local Lyricify Syllable (`.lys`) lyric refinement tool.
+Lyricify Syllable (`.lys`) lyric merge tool.
 
-[中文说明](./README.md)
+[中文](./README.md)
 
 ## Overview
 
-LYS Refiner merges overly fragmented Lyricify Syllable timing tokens into more readable word-level timing while keeping long held notes and word boundaries controllable.
+LYS Refiner merges overly fragmented syllable-level timing into more natural word-level timing while preserving long held notes and word boundary control.
 
-Available as a **desktop app** (Tauri) and **web app** (GitHub Pages). There is no Python backend and no network requirement at runtime; lyrics are processed locally in the browser or desktop shell.
-
-## Features
-
-- Local `.lys` / `.txt` lyric processing
-- Paste text or load a file
-- Automatically merge fragmented syllable tokens
-- Highlight automatically merged words
-- Preview original and refined timelines side by side
-- Manually split or merge tokens directly in the preview
-- Prevent manual merges across whitespace boundaries
-- Copy the final result from the output text box
+Available as a desktop app (Tauri) and web app (GitHub Pages). Fully local processing, no network required, no data uploaded.
 
 ## Online
 
-Open in your browser (no install):
-
 **https://watercooling480.github.io/lys-refiner/**
-
-Data is processed locally in the browser; nothing is uploaded to a server.
-
-## Usage
-
-1. Open LYS Refiner (desktop or web).
-2. Paste lyrics or choose a `.lys` / `.txt` file.
-3. Select a merge strength preset or adjust the slider.
-4. Click `转换`.
-5. Review highlighted merged tokens in the timeline preview.
-6. Click output tokens to split or merge them with the floating action buttons.
-7. Copy the final lyrics from `输出 LYS`.
 
 ## Download
 
-Download from GitHub Releases:
+[GitHub Releases](https://github.com/watercooling480/lys-refiner/releases)
 
-- `LYS.Refiner_VERSION_x64-setup.exe`: installer build
-- `LYS.Refiner_VERSION_x64-standalone.exe`: portable standalone build
+| File | Description |
+| --- | --- |
+| `LYS.Refiner_VERSION_x64-setup.exe` | Installer |
+| `LYS.Refiner_VERSION_x64-standalone.exe` | Portable, no install needed |
+
+## Features
+
+- Paste or drag in `.lys` / `.txt` lyrics
+- Automatic syllable merging
+- Highlight merged words
+- Timeline preview: original vs output
+- Click output tokens to manually split or merge
+- Prevent merges across word boundaries and hyphens
+- Copy result directly from the output box
+
+## Multi-language Support
+
+Automatically detects script type and applies different rules:
+
+| Script | Behavior |
+| --- | --- |
+| Latin/English | Normal merge (main sensitivity) |
+| Korean | Separate sensitivity, default 0.08 |
+| Chinese | No merge, preserved as-is |
+| Japanese | No merge, preserved as-is |
+
+A Korean sensitivity slider appears automatically when Korean text is detected.
+
+Different scripts are never merged across boundaries.
 
 ## Algorithm
 
 Merge decisions are based on:
 
-- syllable timing
-- visual letter width instead of raw character count
-- fixed gap boundary: gaps of 10 ms or more are not merged
-- stricter handling for long held tails
+- syllable duration
+- visual letter width (m/w are wide, i/l are narrow) instead of raw character count
+- fixed gap boundary: gaps >= 10ms are not merged
+- long words and long durations automatically tighten the threshold
+- long trailing syllables tend to stay split
 
 Examples:
 
-- `spo + ti + fy` can become `spotify`
-- `a + lone` can become `alone`
-- long-tail cases such as `moon + light` or `mid + night` are more likely to stay split
+| Input | Output | Reason |
+| --- | --- | --- |
+| `spo + ti + fy` | `spotify` | Short word, even timing |
+| `a + lone` | `alone` | Single-char prefix protection |
+| `dra + ma,` | `drama,` | Short word, sufficient visual width |
+| `moon + light` | `moon / light` | Long tail, back half much longer |
+| `mid + night` | `mid / night` | Same |
+| `There + ov + er,` | `There / over,` | Long-word penalty |
+| `twen + ty-` | `twenty-` | Hyphen inside word, allowed |
+| `twenty- + two` | `twenty- / two` | Hyphen at boundary, blocked |
+
+## Usage
+
+1. Open LYS Refiner (desktop or web)
+2. Paste lyrics or choose a file
+3. Select a preset or adjust the merge strength slider
+4. Click `转换`
+5. Review results in the timeline preview
+6. Click output tokens and use floating buttons to split or merge
+7. Copy final lyrics from the output box
 
 ## Development
 
 ### Web
 
-Requirements: Node.js
-
 ```powershell
 npm install
 npm run dev
 npm run build
-```
-
-Preview a GitHub Pages build locally (assets under `/lys-refiner/`):
-
-```powershell
-$env:GITHUB_PAGES='true'
-npm run build
-npm run preview
 ```
 
 ### Desktop (Tauri)
@@ -91,20 +101,6 @@ npm run tauri:dev
 npm run dist
 ```
 
-Build outputs are generated under:
-
-```text
-src-tauri/target/release/
-src-tauri/target/release/bundle/nsis/
-```
-
 ## Tech Stack
 
-- Tauri 2
-- React
-- TypeScript
-- Vite
-
-## Notes
-
-This is a local-only app. The core processing logic runs in the frontend; there is no backend service.
+Tauri 2 / React / TypeScript / Vite
