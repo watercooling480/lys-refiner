@@ -20,8 +20,21 @@ Available as a desktop app (Tauri) and web app (GitHub Pages). Fully local proce
 
 | File | Description |
 | --- | --- |
-| `LYS.Refiner_VERSION_x64-setup.exe` | Installer |
-| `LYS.Refiner_VERSION_x64-standalone.exe` | Portable, no install needed |
+| `LYS.Refiner_VERSION_x64-setup.exe` | Installer (x64) |
+| `LYS.Refiner_VERSION_x64-standalone.exe` | Portable (x64) |
+| `LYS.Refiner_VERSION_arm64-setup.exe` | Installer (ARM64) |
+| `LYS.Refiner_VERSION_arm64-standalone.exe` | Portable (ARM64) |
+
+## System Requirements
+
+| Platform | Minimum | Notes |
+| --- | --- | --- |
+| Windows | Windows 10 1803+ | Requires WebView2 Runtime |
+| Processor | x64 or ARM64 | Separate builds provided |
+
+WebView2 Runtime is pre-installed on Windows 10 20H2+ and Windows 11. If missing, download from [Microsoft](https://developer.microsoft.com/en-us/microsoft-edge/webview2/).
+
+The online version has no system requirements and works in any modern browser.
 
 ## Features
 
