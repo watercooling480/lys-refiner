@@ -58,19 +58,6 @@ Merge decisions are based on:
 - long words and long durations automatically tighten the threshold
 - long trailing syllables tend to stay split
 
-Examples:
-
-| Input | Output | Reason |
-| --- | --- | --- |
-| `spo + ti + fy` | `spotify` | Short word, even timing |
-| `a + lone` | `alone` | Single-char prefix protection |
-| `dra + ma,` | `drama,` | Short word, sufficient visual width |
-| `moon + light` | `moon / light` | Long tail, back half much longer |
-| `mid + night` | `mid / night` | Same |
-| `There + ov + er,` | `There / over,` | Long-word penalty |
-| `twen + ty-` | `twenty-` | Hyphen inside word, allowed |
-| `twenty- + two` | `twenty- / two` | Hyphen at boundary, blocked |
-
 ## Usage
 
 1. Open LYS Refiner (desktop or web)
