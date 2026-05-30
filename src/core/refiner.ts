@@ -1,7 +1,7 @@
 import type { Preset, Preview, Token, VisualToken } from '../types'
 
 const BOOST_CAP = 1.75
-const SENSITIVITY_GAIN = 1.22
+const SENSITIVITY_GAIN = 1.18
 
 const LETTER_WIDTH: Record<string, number> = {
   i: 0.38,
@@ -86,7 +86,7 @@ function threshold(sensitivity: number, text: string, duration: number, pairDura
     return value * 1.35
   }
 
-  if (width >= 7.5) value *= 0.82
+  if (width >= 7.0) value *= 0.82
   if (width >= 9.5) value *= 0.72
   if (duration >= 1200) value *= 0.78
   if (duration >= 1550) value *= 0.62
