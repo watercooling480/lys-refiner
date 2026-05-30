@@ -1,4 +1,5 @@
 import type { Preset, Preview, Token, VisualToken } from '../types'
+import { parseLysTokens } from './formats'
 
 const BOOST_CAP = 1.75
 const SENSITIVITY_GAIN = 1.18
@@ -62,9 +63,23 @@ const RE_KOREAN = /[\uac00-\ud7af\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\ud7b0-\
 type ScriptType = 'chinese' | 'japanese' | 'korean' | 'latin'
 
 function detectScript(text: string): ScriptType {
-  if (RE_CJK_JAPANESE.test(text)) return 'japanese'
-  if (RE_CJK_CHINESE.test(text)) return 'chinese'
-  if (RE_KOREAN.test(text)) return 'korean'
+  // Count characters of each script type to determine dominant script
+  let japanese = 0
+  let chinese = 0
+  let korean = 0
+  let latin = 0
+  for (const char of Array.from(text)) {
+    if (RE_CJK_JAPANESE.test(char)) japanese++
+    else if (RE_CJK_CHINESE.test(char)) chinese++
+    else if (RE_KOREAN.test(char)) korean++
+    else if (/[A-Za-z\u00C0-\u024F\u1E00-\u1EFF]/.test(char)) latin++
+  }
+  // If has any kana, it's Japanese (kana is unambiguous)
+  if (japanese > 0) return 'japanese'
+  // If has Korean syllables, it's Korean
+  if (korean > 0) return 'korean'
+  // If has CJK ideographs but no kana, it's Chinese
+  if (chinese > 0) return 'chinese'
   return 'latin'
 }
 
@@ -72,14 +87,37 @@ export function detectHasKorean(text: string): boolean {
   return RE_KOREAN.test(text)
 }
 
-function visualWidth(text: string): number {
+export function visualWidth(text: string): number {
   let width = 0
   for (const char of Array.from(text)) {
-    if (!/[A-Za-z0-9\u4e00-\u9fff]/u.test(char)) continue
     const lower = char.toLowerCase()
-    if (lower >= 'a' && lower <= 'z') width += LETTER_WIDTH[lower] ?? 1
-    else if (lower >= '0' && lower <= '9') width += 0.9
-    else width += 1
+    // Basic Latin letters
+    if (lower >= 'a' && lower <= 'z') {
+      width += LETTER_WIDTH[lower] ?? 1
+      continue
+    }
+    // Digits
+    if (lower >= '0' && lower <= '9') {
+      width += 0.9
+      continue
+    }
+    // CJK characters
+    if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(char)) {
+      width += 1
+      continue
+    }
+    // Extended Latin (accented characters: é, ñ, ü, ç, ã, etc.)
+    if (/[\u00C0-\u024F\u1E00-\u1EFF]/.test(char)) {
+      // Map to base letter width if possible
+      const base = char.normalize('NFD').charAt(0).toLowerCase()
+      if (base >= 'a' && base <= 'z') {
+        width += LETTER_WIDTH[base] ?? 1
+      } else {
+        width += 1
+      }
+      continue
+    }
+    // Skip punctuation, spaces, etc. (don't count toward width)
   }
   return width
 }
@@ -117,17 +155,6 @@ function hasLongTail(leftText: string, rightText: string, leftDuration: number, 
   if (mergedDuration < 1200) return false
   if (visualWidth(leftText) <= 1.05 && visualWidth(leftText + rightText) <= 5.4) return false
   return rightDuration / Math.max(leftDuration, 1) >= 1.85
-}
-
-function parseTokens(content: string): Token[] {
-  const parts = content.split(/(\(\d+,\d+\))/g)
-  const tokens: Token[] = []
-  for (let index = 0; index < parts.length - 1; index += 2) {
-    const match = parts[index + 1].match(/\d+/g)
-    if (!match || match.length < 2) continue
-    tokens.push({ text: parts[index], start: Number(match[0]), duration: Number(match[1]) })
-  }
-  return tokens
 }
 
 function toVisual(tokens: Token[], rowIndex: number, prefix: string): VisualToken[] {
@@ -234,7 +261,7 @@ export function refineLine(line: string, sensitivity: number, koreanSensitivity 
 
   const attr = lineMatch[1]
   const content = lineMatch[2]
-  const tokens = parseTokens(content)
+  const tokens = parseLysTokens(content)
   return serializeLine(attr, refineTokens(tokens, sensitivity, 0, koreanSensitivity))
 }
 
@@ -262,7 +289,7 @@ export function preview(text: string, sensitivity: number, koreanSensitivity = 0
     }
 
     const attr = match[1]
-    const original = parseTokens(match[2])
+    const original = parseLysTokens(match[2])
     const before = toVisual(original, index, 'before')
     const after = refineTokens(original, sensitivity, index, koreanSensitivity)
     refinedLines.push(serializeLine(attr, after))

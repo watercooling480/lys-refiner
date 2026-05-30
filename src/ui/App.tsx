@@ -80,9 +80,12 @@ export function App() {
     }
   }, [actionError])
 
+  const toastTimerRef = { current: 0 }
+
   function showActionError(message: string, type: 'error' | 'success' = 'error') {
+    window.clearTimeout(toastTimerRef.current)
     setToastVisible(false)
-    window.setTimeout(() => {
+    toastTimerRef.current = window.setTimeout(() => {
       setActionError(message)
       setToastType(type)
       setToastVisible(true)

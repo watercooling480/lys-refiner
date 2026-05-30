@@ -103,7 +103,7 @@ export function parseLys(content: string): ParsedLyrics {
   return { format: 'lys', lines }
 }
 
-function parseLysTokens(content: string): Token[] {
+export function parseLysTokens(content: string): Token[] {
   const parts = content.split(/(\(\d+,\d+\))/g)
   const tokens: Token[] = []
   for (let i = 0; i < parts.length - 1; i += 2) {
@@ -320,9 +320,6 @@ function parseTtmlSpanChildren(container: Element): { tokens: Token[]; translati
   }
   return { tokens, translation: translation || undefined }
 }
-
-/** No-op: spaces are now preserved as independent tokens */
-function normalizeSpaces(_tokens: Token[], _p: Element): void {}
 
 // --- LYS Serializer ---
 
