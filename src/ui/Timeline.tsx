@@ -7,8 +7,10 @@ type Props = {
 }
 
 function windowFor(before: VisualToken[], after: VisualToken[]) {
-  const starts = [...before, ...after].map((token) => token.start)
-  const ends = [...before, ...after].map((token) => token.end)
+  const timed = [...before, ...after].filter((t) => !(t.start === 0 && t.end === 0))
+  if (!timed.length) return { start: 0, span: 1 }
+  const starts = timed.map((token) => token.start)
+  const ends = timed.map((token) => token.end)
   const start = Math.min(...starts)
   const end = Math.max(...ends)
   return { start, span: Math.max(end - start, 1) }
@@ -34,6 +36,8 @@ function Lane({
   return (
     <div className={`lane ${variant}`}>
       {tokens.map((token, index) => {
+        // Skip space-only placeholder tokens (start=0, end=0) in preview
+        if (token.start === 0 && token.end === 0 && /^\s*$/.test(token.text)) return null
         const left = ((token.start - start) / span) * 100
         const width = ((token.end - token.start) / span) * 100
         return (

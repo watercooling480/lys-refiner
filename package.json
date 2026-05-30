@@ -1,6 +1,6 @@
 {
   "name": "lys-refiner",
-  "version": "0.10.0",
+  "version": "0.12.0",
   "private": true,
   "description": "Local Lyricify Syllable refiner",
   "scripts": {
@@ -12,14 +12,16 @@
     "dist": "tauri build"
   },
   "dependencies": {
+    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "@tauri-apps/plugin-fs": "^2.5.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.9.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "@tauri-apps/cli": "^2.9.3",
     "typescript": "~6.0.2",
     "vite": "^8.0.10"
   }

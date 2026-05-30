@@ -153,6 +153,20 @@ export function refineTokens(tokens: Token[], sensitivity: number, rowIndex = 0,
     const sourceIndexes = [index]
     let nextIndex = index + 1
 
+    // Space-only placeholder tokens (from TTML): pass through without merging
+    if (start === 0 && duration === 0 && /^\s+$/.test(text)) {
+      result.push({
+        id: `after-${rowIndex}-${result.length}`,
+        text,
+        start,
+        end: 0,
+        sourceIndexes,
+        merged: false,
+      })
+      index = nextIndex
+      continue
+    }
+
     const script = detectScript(text)
     if (script === 'chinese' || script === 'japanese') {
       result.push({

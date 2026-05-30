@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
+import { save } from '@tauri-apps/plugin-dialog'
+import { writeTextFile } from '@tauri-apps/plugin-fs'
 import { PRESETS, detectHasKorean, preview, serializeLine } from '../core/refiner'
+import { detectFormat, parseLys, parseQrc, parseTtml, serializeToLys, serializeToLysRaw, serializeToQrc, serializeToTtml, serializeTranslationsToLrc, type ParsedLyrics } from '../core/formats'
 import type { Preset, Preview, VisualToken } from '../types'
 import { Timeline } from './Timeline'
+
+type FileFormat = 'lys' | 'qrc' | 'ttml' | 'unknown'
 
 function percent(value: number) {
   return `${(value * 100).toFixed(1)}%`
@@ -24,6 +29,9 @@ function hasHyphenBoundary(tokens: VisualToken[]) {
 export function App() {
   const [fileName, setFileName] = useState('lyrics.lys')
   const [source, setSource] = useState('')
+  const [detectedFormat, setDetectedFormat] = useState<FileFormat>('lys')
+  const [exportFormat, setExportFormat] = useState<'lys' | 'qrc' | 'ttml'>('lys')
+  const [parsedTtmlData, setParsedTtmlData] = useState<ParsedLyrics | undefined>(undefined)
   const [preset, setPreset] = useState<Preset>(PRESETS[1])
   const [strength, setStrength] = useState(PRESETS[1].sensitivity)
   const [koreanStrength, setKoreanStrength] = useState(0.08)
@@ -33,6 +41,7 @@ export function App() {
   const [error, setError] = useState('')
   const [actionError, setActionError] = useState('')
   const [toastVisible, setToastVisible] = useState(false)
+  const [toastType, setToastType] = useState<'error' | 'success'>('error')
 
   const activePreset = useMemo(() => PRESETS.find((item) => item.id === preset.id), [preset])
   const selectedIds = useMemo(
@@ -41,13 +50,24 @@ export function App() {
   )
   const outputText = useMemo(() => {
     if (!result) return ''
-    let rowCursor = 0
-    return source.split(/\r?\n/).map((line) => {
-      if (!/^\[\d+\]/.test(line)) return line
-      const row = result.rows[rowCursor++]
-      return row ? serializeLine(row.attr, row.after) : line
-    }).join('\n')
-  }, [result, source])
+    const lines = result.rows.map((row) => ({
+      property: Number(row.attr),
+      tokens: row.after.map((t) => ({ text: t.text, start: t.start, duration: t.end - t.start })),
+      isBackground: Number(row.attr) >= 6,
+      translation: parsedTtmlData?.lines.find((l, i) => {
+        let cursor = 0
+        for (let ri = 0; ri < result.rows.length; ri++) {
+          if (ri === result.rows.indexOf(row)) return cursor === i
+          cursor++
+        }
+        return false
+      })?.translation,
+    }))
+    const meta = parsedTtmlData?.metadata
+    if (exportFormat === 'qrc') return serializeToQrc(lines, meta)
+    if (exportFormat === 'ttml') return serializeToTtml(lines, undefined, parsedTtmlData)
+    return serializeToLys(lines, meta)
+  }, [result, exportFormat, parsedTtmlData])
 
   useEffect(() => {
     if (!actionError) return
@@ -60,23 +80,43 @@ export function App() {
     }
   }, [actionError])
 
-  function showActionError(message: string) {
+  function showActionError(message: string, type: 'error' | 'success' = 'error') {
     setToastVisible(false)
     window.setTimeout(() => {
       setActionError(message)
+      setToastType(type)
       setToastVisible(true)
     }, 20)
   }
 
   function runPreview() {
     if (!source.trim()) {
-      setError('请粘贴歌词或拖入 .lys 文件。')
+      setError('请粘贴歌词或拖入文件。')
       return
     }
     setError('')
     setActionError('')
-    setHasKorean(detectHasKorean(source))
-    setResult(preview(source, strength, koreanStrength))
+
+    // Detect format and convert to LYS internally for refining
+    const format = detectFormat(source)
+    setDetectedFormat(format)
+    const ef = format === 'unknown' ? 'lys' : format
+    setExportFormat(ef)
+
+    let lysText = source
+    let ttmlParsed: ParsedLyrics | undefined = undefined
+    if (format === 'qrc') {
+      const parsed = parseQrc(source)
+      lysText = serializeToLys(parsed.lines)
+    } else if (format === 'ttml') {
+      const parsed = parseTtml(source)
+      ttmlParsed = parsed
+      lysText = serializeToLysRaw(parsed.lines)
+    }
+    setParsedTtmlData(ttmlParsed)
+
+    setHasKorean(detectHasKorean(lysText))
+    setResult(preview(lysText, strength, koreanStrength))
     setSelected([])
   }
 
@@ -189,7 +229,7 @@ export function App() {
             </div>
             <label className="file-button">
               选择文件
-              <input type="file" accept=".lys,.txt" onChange={(event) => void chooseFile(event.target.files?.[0])} />
+              <input type="file" accept=".lys,.txt,.qrc,.ttml,.xml" onChange={(event) => void chooseFile(event.target.files?.[0])} />
             </label>
           </div>
           <textarea
@@ -206,7 +246,7 @@ export function App() {
               event.preventDefault()
               void chooseFile(event.dataTransfer.files[0])
             }}
-            placeholder="[4]spo(1000,500)ti(1500,500)fy(2000,500)"
+            placeholder="[4]spo(1000,500)ti(1500,500)fy(2000,500)&#10;支持 .lys / .qrc / .ttml 格式"
             spellCheck={false}
           />
         </section>
@@ -214,9 +254,38 @@ export function App() {
         <section className="card output-card">
           <div className="card-head">
             <div>
-              <h2>输出 LYS</h2>
-              <p>点击预览后在这里复制结果。</p>
+              <h2>输出</h2>
+              <div className="format-tabs">
+                <button className={exportFormat === 'lys' ? 'active' : ''} onClick={() => setExportFormat('lys')}>LYS</button>
+                <button className={exportFormat === 'qrc' ? 'active' : ''} onClick={() => setExportFormat('qrc')}>QRC</button>
+                <button className={exportFormat === 'ttml' ? 'active' : ''} onClick={() => setExportFormat('ttml')}>TTML</button>
+              </div>
             </div>
+            <button className="file-button" onClick={async () => {
+              if (!outputText) return
+              const ext = exportFormat === 'ttml' ? '.ttml' : exportFormat === 'qrc' ? '.qrc' : '.lys'
+              const stem = fileName.replace(/\.[^.]+$/, '') || 'lyrics'
+              const defaultName = `${stem}_refined${ext}`
+              try {
+                const filePath = await save({
+                  defaultPath: defaultName,
+                  filters: [{ name: 'Lyrics', extensions: [ext.slice(1)] }],
+                })
+                if (!filePath) return
+                await writeTextFile(filePath, outputText)
+                showActionError(`已保存: ${filePath}`, 'success')
+              } catch (e) {
+                // Fallback to browser download if Tauri API unavailable
+                const blob = new Blob([outputText], { type: 'text/plain;charset=utf-8' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = defaultName
+                a.click()
+                URL.revokeObjectURL(url)
+                showActionError(`已保存: ${defaultName}`, 'success')
+              }
+            }}>保存文件</button>
           </div>
           <textarea
             className="lyrics-box output-box"
@@ -315,7 +384,7 @@ export function App() {
           <button onClick={mergeSelected} disabled={selected.length < 2}>合并</button>
         </div>
       ) : null}
-      {actionError ? <div className={`toast ${toastVisible ? 'show' : 'hide'}`}>{actionError}</div> : null}
+      {actionError ? <div className={`toast ${toastType} ${toastVisible ? 'show' : 'hide'}`}>{actionError}</div> : null}
     </div>
   )
 }
